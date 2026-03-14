@@ -115,6 +115,11 @@
 		<input type="range" id="resizeWidth" min="16" max="100" value="100" step="1">
 	</div>
 
+	<div class="field" style="flex-direction: row; align-items: center; gap: 10px;">
+		<input type="checkbox" id="dispose" style="width: auto;">
+		<label for="dispose">Clear frame buffer (Replace frames)</label>
+	</div>
+
 	<div class="field">
 		<label for="framerate">Framerate (FPS):</label>
 		<input type="number" id="framerate" value="24" min="1" required>
@@ -150,6 +155,7 @@ const qValLabel = document.getElementById('qVal');
 const rInput = document.getElementById('resizeWidth');
 const rValLabel = document.getElementById('rVal');
 const rField = document.getElementById('resize-field');
+const disposeInput = document.getElementById('dispose');
 const imageInput = document.getElementById('images');
 
 let currentBlobUrl = null;
@@ -226,6 +232,7 @@ form.onsubmit = async (e) => {
 	const fps = parseInt(document.getElementById('framerate').value);
 	const quality = parseInt(qInput.value) / 100;
 	const targetWidth = parseInt(rInput.value);
+	const dispose = disposeInput.checked;
 	const filename = document.getElementById('filename').value || 'animation';
 	const delay = Math.round(1000 / fps);
 
@@ -248,7 +255,8 @@ form.onsubmit = async (e) => {
 
 			const frame = await WebP.Image.generateFrame({
 				buffer: webpBuffer,
-				delay: delay
+				delay: delay,
+				dispose: dispose ? 1 : 0
 			});
 			muxer.frames.push(frame);
 		}
@@ -326,6 +334,7 @@ form.onreset = () => {
 	downloadBtn.style.display = "none";
 	qValLabel.textContent = "80";
 	rValLabel.textContent = "";
+	disposeInput.checked = false;
 	originalWidth = 0;
 	if (currentBlobUrl) URL.revokeObjectURL(currentBlobUrl);
 };
