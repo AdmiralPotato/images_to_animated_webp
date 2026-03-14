@@ -1,0 +1,62 @@
+<svg
+  viewBox="0 0 128 128"
+  class="perfectlooper-play-icon"
+  xmlns="http://www.w3.org/2000/svg"
+  xmlns:xlink="http://www.w3.org/1999/xlink"
+>
+  <defs>
+    <style type="text/css">
+      .munsell-rainbow {
+        height: 128px;
+        width: 128px;
+        background-color: #9f0;
+        background-size: cover;
+        background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAIAAACQkWg2AAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAgpJREFUeNo0Uj1v1UAQnL3b89lOyAtR3pMgEkgpoKOBmpL/QMeP4ndQUFJBE9FBhUQBTRSJ6D0FYuOPd/bdsesI62TJ65nZ2Z2jzfvXp/73o2p7Xm2fVLvH3K8zDhLKjFXCQYDpQA3QInfAAG6nFREKMx3Y/anrNjzOlDJAAMs7goLi9IzADB7jUQxWEM7EFQ8b15/yIJ+WYBNMAInwog1hRnBOhyG7mywAVCasi/bMjieUTQLPC7pdCHuVx0yMXIv6HHk3MiEfu/68aB+YgbPK43Y5YmYiTAZ7Kz5L5ALZx+yvh+IL0blvn9774TJIoDdAL/IGg0PPGJgVDR0B8DmVl53/sIvPq+2z0Jgr5GuDvwVaj9ahcxi1g4U+WVlCy+W35ujdVXj19VN14fKuRldgZDGjlmYjBLNAaWERUoV08vHzm4u3L19sv5vFh9UJIikuMaJZ0AZJiozgMHi+PPoZjs9Q1fjFan+0CCT6mFk5yeiJIiStHRpfd2jK4s/tQ8ElNDNKq+iwEKaFINrzHUEt1APaAg2OD7EWMQkia5K8ELSJVbRITKJo7WDqPXqfW+v6eF9KsnULiZ8k+kVYzMgk2kH+Gj+Sn2SW3DrTx9phRRqyTKmXaSEk878DYU/lCBe10Lncj+xRW6mqDeWwrktnuNuB5A8fwElbDhIAUciFk1umTaIs/p8AAwB/xAkhRHHGzAAAAABJRU5ErkJggg==);
+      }
+    </style>
+    <filter id="blur-0">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="2"></feGaussianBlur>
+    </filter>
+    <path
+      id="circle-path-0"
+      d="M64,18a46,46,0,1,0,46,46A46.05239,46.05239,0,0,0,64,18Z"
+    ></path>
+    <path
+      id="triangle-path-0"
+      d="M52.00049,90.79395A6.02286,6.02286,0,0,1,46,84.78418V43.21533a6,6,0,0,1,9-5.1958L91,58.8042a5.99981,5.99981,0,0,1,0,10.39209L55,89.98145A5.98645,5.98645,0,0,1,52.00049,90.79395Z"
+    ></path>
+    <clipPath id="circle-mask-0">
+      <use xlink:href="#circle-path-0"></use>
+    </clipPath>
+    <clipPath id="triangle-mask-0">
+      <use xlink:href="#triangle-path-0"></use>
+    </clipPath>
+    <clipPath id="stroke-mask-0">
+      <path
+        d="M64,16a48,48,0,1,0,48,48A48,48,0,0,0,64,16Zm0,92a44,44,0,1,1,44-44A44.04979,44.04979,0,0,1,64,108ZM92,57.07227,56,36.2876a8,8,0,0,0-12,6.92773V84.78418a7.98345,7.98345,0,0,0,12,6.92871L91.999,70.92871A7.99955,7.99955,0,0,0,92,57.07227ZM90,67.46411,54,88.24872a4,4,0,0,1-6-3.46411V43.21539a4,4,0,0,1,6-3.46411L90,60.53589A4,4,0,0,1,90,67.46411Z"
+      ></path>
+    </clipPath>
+  </defs>
+  <g clip-path="url(#circle-mask-0)" opacity="0.25">
+    <foreignObject width="128" height="128" filter="url(#blur-0)">
+      <div xmlns="http://www.w3.org/1999/xhtml" class="munsell-rainbow"></div>
+    </foreignObject>
+  </g>
+  <use
+    xlink:href="#circle-path-0"
+    filter="url(#blur-0)"
+    stroke-width="6"
+    stroke="rgba(0,0,0,0.5)"
+    fill="none"
+  ></use>
+  <g clip-path="url(#stroke-mask-0)">
+    <foreignObject width="128" height="128" filter="url(#blur-0)">
+      <div xmlns="http://www.w3.org/1999/xhtml" class="munsell-rainbow"></div>
+    </foreignObject>
+  </g>
+  <g clip-path="url(#triangle-mask-0)">
+    <foreignObject width="128" height="128" filter="url(#blur-0)">
+      <div xmlns="http://www.w3.org/1999/xhtml" class="munsell-rainbow"></div>
+    </foreignObject>
+  </g>
+</svg>

@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Images to Animated WebP</title>
+	<style>
+		root {
+			--i: 0;
+			--n: 10;
+		}
+		header { display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem; }
+		header h1 { margin: 0; font-size: 1.8rem; }
+		.logo { width: 128px; height: 128px; }
+		body { font-family: system-ui, sans-serif; max-width: 600px; margin: 2rem auto; padding: 0 1rem; line-height: 1.5; background-color: #121212; color: #e0e0e0; }
+		#init-loader { font-weight: bold; padding: 2rem; border: 1px solid #333; text-align: center; background: #1e1e1e; border-radius: 8px; color: #9f0; }
+		form { display: none; flex-direction: column; gap: 1.2rem; border: 1px solid #333; padding: 1.5rem; border-radius: 8px; background: #1e1e1e; }
+		.field { display: flex; flex-direction: column; gap: 0.4rem; }
+
+		#preview-grid {
+			display: none;
+			grid-template-columns: 1fr;
+			justify-items: center;
+			margin: 20px 0;
+			height: 120px;
+			position: relative;
+		}
+		.preview-item {
+			grid-area: 1 / 1;
+			width: 100px;
+			height: 100px;
+			background-size: cover;
+			background-position: center;
+			border: 2px solid #333;
+			border-radius: 4px;
+			box-shadow: 0 2px 8px rgba(0,0,0,0.5);
+			transform-origin: bottom center;
+			transform: rotate(calc((var(--i) / (var(--n) - 1)) * 35deg - 17.5deg));
+			z-index: var(--i);
+		}
+		.preview-item:only-child {
+			transform: rotate(0deg);
+		}
+		.preview-overlay {
+			width: 100%;
+			height: 100%;
+			background: rgba(0, 0, 0, 0.6);
+			color: white;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			text-align: center;
+			font-size: 0.8rem;
+			font-weight: bold;
+			border-radius: 2px;
+			pointer-events: none;
+		}
+
+		#output-area { 
+			margin-top: 1rem; 
+			display: none; 
+			flex-direction: column; 
+			gap: 1.2rem; 
+			border: 1px solid #333; 
+			padding: 1.5rem; 
+			border-radius: 8px; 
+			background: #1e1e1e;
+			align-items: center; 
+			text-align: center;
+		}
+		#output img { max-width: 100%; border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
+		#output-stats { font-size: 0.85rem; color: #9f0; font-weight: bold; }
+		#status { font-weight: bold; color: #9f0; min-height: 1.5em; margin-bottom: 0.5rem; }
+		label { font-weight: 600; font-size: 0.9rem; color: #9f0; }
+		input[type="text"], input[type="number"], input[type="file"] { background: #2c2c2c; border: 1px solid #444; color: #e0e0e0; padding: 0.5rem; border-radius: 4px; }
+		
+		input[type="range"] { accent-color: #9f0; cursor: pointer; }
+
+		button[type="submit"], #downloadBtn { background: #9f0; color: #121212; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; padding: 0.7rem; transition: opacity 0.2s; }
+		button[type="submit"]:hover, #downloadBtn:hover { opacity: 0.9; }
+		button[type="submit"]:disabled { opacity: 0.5; cursor: not-allowed; }
+		button[type="reset"] { padding: 0.7rem; cursor: pointer; border: 1px solid #444; background: #2c2c2c; color: #e0e0e0; border-radius: 4px; }
+		#downloadBtn { text-decoration: none; display: none; text-align: center; width: 100%; box-sizing: border-box; }
+	</style>
+</head>
+<body>
+
+<header>
+	<img src="logo.svg" alt="Logo" class="logo">
+	<h1>Images to Animated WebP</h1>
+</header>
+
+<p style="margin-bottom: 48px;">All images stay on your computer, they are not uploaded to anywhere. The animated WebP generation process takes place entirely within your own browser. Supports any image format your browser knows how to display.</p>
+
+<div id="init-loader">Initializing WebP Engine...</div>
+
+<form id="animForm">
+	<div class="field">
+		<label for="images">Images (Multi-select):</label>
+		<input type="file" id="images" accept="image/*" multiple required>
+		<div id="preview-grid"></div>
+	</div>
+
+	<div class="field">
+		<label for="filename">Filename:</label>
+		<input type="text" id="filename" value="animation" placeholder="e.g. my-animation">
+	</div>
+
+	<div class="field">
+		<label for="quality">Quality (1-100): <span id="qVal">80</span></label>
+		<input type="range" id="quality" min="1" max="100" value="80" step="1">
+	</div>
+
+	<div class="field">
+		<label for="framerate">Framerate (FPS):</label>
+		<input type="number" id="framerate" value="24" min="1" required>
+	</div>
+
+	<div style="display: flex; gap: 10px;">
+		<button type="submit" id="genBtn" style="flex: 2;">Generate</button>
+		<button type="reset" id="resetBtn" style="flex: 1;">Reset</button>
+	</div>
+</form>
+
+<div id="output-area">
+	<div id="status"></div>
+	<a id="downloadBtn">Download WebP</a>
+	<div id="output-stats"></div>
+	<div id="output"></div>
+</div>
+
+<script type="module">
+import WebP from 'https://esm.sh/gh/AdmiralPotato/node-webpmux/dist/webpmux.mjs';
+
+await WebP.Image.initLib()
+
+const form = document.getElementById('animForm');
+const status = document.getElementById('status');
+const loader = document.getElementById('init-loader');
+const output = document.getElementById('output');
+const outputStats = document.getElementById('output-stats');
+const previewGrid = document.getElementById('preview-grid');
+const downloadBtn = document.getElementById('downloadBtn');
+const qInput = document.getElementById('quality');
+const qValLabel = document.getElementById('qVal');
+const imageInput = document.getElementById('images');
+
+let currentBlobUrl = null;
+
+(async () => {
+	loader.style.display = "none";
+	form.style.display = "flex";
+})();
+
+imageInput.onchange = () => {
+	previewGrid.innerHTML = "";
+	const files = Array.from(imageInput.files);
+	const total = files.length;
+
+	if (total === 0) {
+		previewGrid.style.display = "none";
+		return;
+	}
+
+	previewGrid.style.display = "grid";
+	const displayLimit = 10;
+
+	// Show up to the last 10 images
+	const startIndex = Math.max(0, total - displayLimit);
+	const visibleFiles = files.slice(startIndex);
+	previewGrid.style.setProperty('--n', visibleFiles.length);
+
+	visibleFiles.forEach((file, index) => {
+		const card = document.createElement('span');
+		card.className = 'preview-item';
+		card.style.backgroundImage = `url(${URL.createObjectURL(file)})`;
+		card.style.setProperty('--i', index);
+		previewGrid.appendChild(card);
+
+		if (index === visibleFiles.length - 1) {
+			const overlay = document.createElement('div');
+			overlay.className = 'preview-overlay';
+			overlay.textContent = `${total} Images selected`;
+			card.appendChild(overlay);
+		}
+	});
+};
+
+qInput.oninput = () => qValLabel.textContent = qInput.value;
+
+form.onsubmit = async (e) => {
+	e.preventDefault();
+	const area = document.getElementById('output-area');
+	area.style.display = "flex";
+	status.textContent = "Generating...";
+	output.innerHTML = "";
+	outputStats.textContent = "";
+	downloadBtn.style.display = "none";
+	document.getElementById('genBtn').disabled = true;
+
+	if (currentBlobUrl) URL.revokeObjectURL(currentBlobUrl);
+
+	const fileList = Array.from(imageInput.files);
+	const fps = parseInt(document.getElementById('framerate').value);
+	const quality = parseInt(qInput.value) / 100;
+	const filename = document.getElementById('filename').value || 'animation';
+	const delay = Math.round(1000 / fps);
+
+	try {
+		const muxer = await WebP.Image.getEmptyImage(true);
+		muxer.convertToAnim();
+		let firstWidth = 0;
+		let firstHeight = 0;
+
+		for (let i = 0; i < fileList.length; i++) {
+			const webpBuffer = await convertToWebPBuffer(fileList[i], quality);
+
+			const img = new WebP.Image();
+			await img.initLib();
+			await img.load(webpBuffer);
+			if (i === 0) {
+				firstWidth = img.width;
+				firstHeight = img.height;
+			}
+
+			const frame = await WebP.Image.generateFrame({
+				buffer: webpBuffer,
+				delay: delay
+			});
+			muxer.frames.push(frame);
+		}
+
+		const resultBuffer = await muxer.save(null, { width: firstWidth, height: firstHeight, loops: 0 });
+		const blob = new Blob([resultBuffer], { type: 'image/webp' });
+		currentBlobUrl = URL.createObjectURL(blob);
+
+		const sizeKB = (resultBuffer.length / 1024).toFixed(2);
+		const sizeMB = (resultBuffer.length / (1024 * 1024)).toFixed(2);
+		outputStats.textContent = `Dimensions: ${firstWidth}x${firstHeight}px | Size: ${sizeKB} KB (${sizeMB} MB) | Frames: ${fileList.length}`;
+
+		const img = document.createElement('img');
+		img.onload = () => {
+			output.scrollIntoView({ behavior: 'smooth', block: 'end' });
+		};
+		img.src = currentBlobUrl;
+		output.appendChild(img);
+
+		downloadBtn.href = currentBlobUrl;
+		downloadBtn.download = `${filename}.webp`;
+		downloadBtn.style.display = "block";
+
+		status.textContent = "Finished!";
+	} catch (err) {
+		console.error(err);
+		status.textContent = "Error: " + err.message;
+	} finally {
+		document.getElementById('genBtn').disabled = false;
+	}
+};
+
+async function convertToWebPBuffer(file, quality) {
+	return new Promise((resolve, reject) => {
+		const img = new Image();
+		img.onload = () => {
+			const canvas = document.createElement('canvas');
+			canvas.width = img.width;
+			canvas.height = img.height;
+			const ctx = canvas.getContext('2d');
+			ctx.drawImage(img, 0, 0);
+
+			canvas.toBlob((blob) => {
+				if (!blob || blob.type !== 'image/webp') {
+					return reject(new Error("Canvas failed to encode as WebP. Check browser support."));
+				}
+				const reader = new FileReader();
+				reader.onload = () => resolve(new Uint8Array(reader.result));
+				reader.readAsArrayBuffer(blob);
+			}, 'image/webp', quality);
+		};
+		img.onerror = () => reject(new Error("Image load error"));
+		img.src = URL.createObjectURL(file);
+	});
+}
+
+form.onreset = () => {
+	const area = document.getElementById('output-area');
+	area.style.display = "none";
+	status.textContent = "";
+	output.innerHTML = "";
+	outputStats.textContent = "";
+	previewGrid.innerHTML = "";
+	previewGrid.style.display = "none";
+	downloadBtn.style.display = "none";
+	qValLabel.textContent = "80";
+	if (currentBlobUrl) URL.revokeObjectURL(currentBlobUrl);
+};
+</script>
+</body>
+</html>
