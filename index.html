@@ -110,6 +110,11 @@
 		<input type="range" id="quality" min="1" max="100" value="80" step="1">
 	</div>
 
+	<div class="field" id="resize-field" style="display: none;">
+		<label for="resizeWidth">Resize Width (max): <span id="rVal"></span>px</label>
+		<input type="range" id="resizeWidth" min="16" max="100" value="100" step="1">
+	</div>
+
 	<div class="field">
 		<label for="framerate">Framerate (FPS):</label>
 		<input type="number" id="framerate" value="24" min="1" required>
@@ -142,9 +147,13 @@ const previewGrid = document.getElementById('preview-grid');
 const downloadBtn = document.getElementById('downloadBtn');
 const qInput = document.getElementById('quality');
 const qValLabel = document.getElementById('qVal');
+const rInput = document.getElementById('resizeWidth');
+const rValLabel = document.getElementById('rVal');
+const rField = document.getElementById('resize-field');
 const imageInput = document.getElementById('images');
 
 let currentBlobUrl = null;
+let originalWidth = 0;
 
 (async () => {
 	loader.style.display = "none";
@@ -158,8 +167,21 @@ imageInput.onchange = () => {
 
 	if (total === 0) {
 		previewGrid.style.display = "none";
+		rField.style.display = "none";
 		return;
 	}
+
+	const firstFile = files[0];
+	const img = new Image();
+	img.onload = () => {
+		originalWidth = img.width;
+		rInput.max = originalWidth;
+		rInput.value = originalWidth;
+		rValLabel.textContent = originalWidth;
+		rField.style.display = "flex";
+		URL.revokeObjectURL(img.src);
+	};
+	img.src = URL.createObjectURL(firstFile);
 
 	previewGrid.style.display = "grid";
 	const displayLimit = 10;
@@ -186,6 +208,7 @@ imageInput.onchange = () => {
 };
 
 qInput.oninput = () => qValLabel.textContent = qInput.value;
+rInput.oninput = () => rValLabel.textContent = rInput.value;
 
 form.onsubmit = async (e) => {
 	e.preventDefault();
@@ -202,6 +225,7 @@ form.onsubmit = async (e) => {
 	const fileList = Array.from(imageInput.files);
 	const fps = parseInt(document.getElementById('framerate').value);
 	const quality = parseInt(qInput.value) / 100;
+	const targetWidth = parseInt(rInput.value);
 	const filename = document.getElementById('filename').value || 'animation';
 	const delay = Math.round(1000 / fps);
 
@@ -212,7 +236,7 @@ form.onsubmit = async (e) => {
 		let firstHeight = 0;
 
 		for (let i = 0; i < fileList.length; i++) {
-			const webpBuffer = await convertToWebPBuffer(fileList[i], quality);
+			const webpBuffer = await convertToWebPBuffer(fileList[i], quality, targetWidth);
 
 			const img = new WebP.Image();
 			await img.initLib();
@@ -257,15 +281,24 @@ form.onsubmit = async (e) => {
 	}
 };
 
-async function convertToWebPBuffer(file, quality) {
+async function convertToWebPBuffer(file, quality, targetWidth) {
 	return new Promise((resolve, reject) => {
 		const img = new Image();
 		img.onload = () => {
 			const canvas = document.createElement('canvas');
-			canvas.width = img.width;
-			canvas.height = img.height;
+			let w = img.width;
+			let h = img.height;
+
+			if (targetWidth && targetWidth < img.width) {
+				const scale = targetWidth / img.width;
+				w = targetWidth;
+				h = Math.round(img.height * scale);
+			}
+
+			canvas.width = w;
+			canvas.height = h;
 			const ctx = canvas.getContext('2d');
-			ctx.drawImage(img, 0, 0);
+			ctx.drawImage(img, 0, 0, w, h);
 
 			canvas.toBlob((blob) => {
 				if (!blob || blob.type !== 'image/webp') {
@@ -289,8 +322,11 @@ form.onreset = () => {
 	outputStats.textContent = "";
 	previewGrid.innerHTML = "";
 	previewGrid.style.display = "none";
+	rField.style.display = "none";
 	downloadBtn.style.display = "none";
 	qValLabel.textContent = "80";
+	rValLabel.textContent = "";
+	originalWidth = 0;
 	if (currentBlobUrl) URL.revokeObjectURL(currentBlobUrl);
 };
 </script>
