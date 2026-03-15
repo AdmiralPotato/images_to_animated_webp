@@ -120,6 +120,12 @@
 		<label for="dispose">Clear frame buffer (Replace frames)</label>
 	</div>
 
+	<div class="field" style="flex-direction: row; align-items: center; gap: 10px;">
+		<input type="checkbox" id="useBackground" style="width: auto;">
+		<label for="useBackground">Add background color:</label>
+		<input type="color" id="backgroundColor" value="#000000" style="width: 50px; height: 30px; border: none; padding: 0; background: none; cursor: pointer;">
+	</div>
+
 	<div class="field">
 		<label for="framerate">Framerate (FPS):</label>
 		<input type="number" id="framerate" value="24" min="1" required>
@@ -156,6 +162,8 @@ const rInput = document.getElementById('resizeWidth');
 const rValLabel = document.getElementById('rVal');
 const rField = document.getElementById('resize-field');
 const disposeInput = document.getElementById('dispose');
+const useBgInput = document.getElementById('useBackground');
+const bgColorInput = document.getElementById('backgroundColor');
 const imageInput = document.getElementById('images');
 
 let currentBlobUrl = null;
@@ -233,6 +241,8 @@ form.onsubmit = async (e) => {
 	const quality = parseInt(qInput.value) / 100;
 	const targetWidth = parseInt(rInput.value);
 	const dispose = disposeInput.checked;
+	const useBg = useBgInput.checked;
+	const bgColor = bgColorInput.value;
 	const filename = document.getElementById('filename').value || 'animation';
 	const delay = Math.round(1000 / fps);
 
@@ -243,7 +253,7 @@ form.onsubmit = async (e) => {
 		let firstHeight = 0;
 
 		for (let i = 0; i < fileList.length; i++) {
-			const webpBuffer = await convertToWebPBuffer(fileList[i], quality, targetWidth);
+			const webpBuffer = await convertToWebPBuffer(fileList[i], quality, targetWidth, useBg, bgColor);
 
 			const img = new WebP.Image();
 			await img.initLib();
@@ -289,7 +299,7 @@ form.onsubmit = async (e) => {
 	}
 };
 
-async function convertToWebPBuffer(file, quality, targetWidth) {
+async function convertToWebPBuffer(file, quality, targetWidth, useBg, bgColor) {
 	return new Promise((resolve, reject) => {
 		const img = new Image();
 		img.onload = () => {
@@ -306,6 +316,12 @@ async function convertToWebPBuffer(file, quality, targetWidth) {
 			canvas.width = w;
 			canvas.height = h;
 			const ctx = canvas.getContext('2d');
+			
+			if (useBg) {
+				ctx.fillStyle = bgColor;
+				ctx.fillRect(0, 0, w, h);
+			}
+			
 			ctx.drawImage(img, 0, 0, w, h);
 
 			canvas.toBlob((blob) => {
@@ -335,6 +351,8 @@ form.onreset = () => {
 	qValLabel.textContent = "80";
 	rValLabel.textContent = "";
 	disposeInput.checked = false;
+	useBgInput.checked = false;
+	bgColorInput.value = "#ffffff";
 	originalWidth = 0;
 	if (currentBlobUrl) URL.revokeObjectURL(currentBlobUrl);
 };
