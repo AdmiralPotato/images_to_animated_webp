@@ -126,6 +126,22 @@
 		<input type="color" id="backgroundColor" value="#000000" style="width: 50px; height: 30px; border: none; padding: 0; background: none; cursor: pointer;">
 	</div>
 
+	<div class="field" style="flex-direction: row; align-items: center; gap: 10px;">
+		<input type="checkbox" id="useCrop" style="width: auto;">
+		<label for="useCrop">Crop image</label>
+	</div>
+
+	<div id="crop-fields" style="display: none; flex-direction: row; gap: 10px;">
+		<div class="field" style="flex: 1;">
+			<label for="cropWidth">Crop Width (px):</label>
+			<input type="number" id="cropWidth" min="1" value="100">
+		</div>
+		<div class="field" style="flex: 1;">
+			<label for="cropHeight">Crop Height (px):</label>
+			<input type="number" id="cropHeight" min="1" value="100">
+		</div>
+	</div>
+
 	<div class="field">
 		<label for="framerate">Framerate (FPS):</label>
 		<input type="number" id="framerate" value="24" min="1" required>
@@ -164,10 +180,15 @@ const rField = document.getElementById('resize-field');
 const disposeInput = document.getElementById('dispose');
 const useBgInput = document.getElementById('useBackground');
 const bgColorInput = document.getElementById('backgroundColor');
+const useCropInput = document.getElementById('useCrop');
+const cropFields = document.getElementById('crop-fields');
+const cropWidthInput = document.getElementById('cropWidth');
+const cropHeightInput = document.getElementById('cropHeight');
 const imageInput = document.getElementById('images');
 
 let currentBlobUrl = null;
 let originalWidth = 0;
+let originalAspectRatio = 1;
 
 (async () => {
 	loader.style.display = "none";
@@ -189,9 +210,12 @@ imageInput.onchange = () => {
 	const img = new Image();
 	img.onload = () => {
 		originalWidth = img.width;
+		originalAspectRatio = img.height / img.width;
 		rInput.max = originalWidth;
 		rInput.value = originalWidth;
 		rValLabel.textContent = originalWidth;
+		cropWidthInput.value = originalWidth;
+		cropHeightInput.value = Math.round(originalWidth * originalAspectRatio);
 		rField.style.display = "flex";
 		URL.revokeObjectURL(img.src);
 	};
@@ -221,8 +245,24 @@ imageInput.onchange = () => {
 	});
 };
 
+useBgInput.onchange = () => {
+	bgColorInput.style.display = useBgInput.checked ? "inline-block" : "none";
+};
+
+useCropInput.onchange = () => {
+	cropFields.style.display = useCropInput.checked ? "flex" : "none";
+};
+
 qInput.oninput = () => qValLabel.textContent = qInput.value;
-rInput.oninput = () => rValLabel.textContent = rInput.value;
+rInput.oninput = () => {
+	rValLabel.textContent = rInput.value;
+	cropWidthInput.value = rInput.value;
+	cropHeightInput.value = Math.round(rInput.value * originalAspectRatio);
+};
+
+cropWidthInput.oninput = () => {
+	cropHeightInput.value = Math.round(cropWidthInput.value * originalAspectRatio);
+};
 
 form.onsubmit = async (e) => {
 	e.preventDefault();
@@ -243,6 +283,9 @@ form.onsubmit = async (e) => {
 	const dispose = disposeInput.checked;
 	const useBg = useBgInput.checked;
 	const bgColor = bgColorInput.value;
+	const useCrop = useCropInput.checked;
+	const cropWidth = parseInt(cropWidthInput.value);
+	const cropHeight = parseInt(cropHeightInput.value);
 	const filename = document.getElementById('filename').value || 'animation';
 	const delay = Math.round(1000 / fps);
 
@@ -253,7 +296,7 @@ form.onsubmit = async (e) => {
 		let firstHeight = 0;
 
 		for (let i = 0; i < fileList.length; i++) {
-			const webpBuffer = await convertToWebPBuffer(fileList[i], quality, targetWidth, useBg, bgColor);
+			const webpBuffer = await convertToWebPBuffer(fileList[i], quality, targetWidth, useBg, bgColor, useCrop, cropWidth, cropHeight);
 
 			const img = new WebP.Image();
 			await img.initLib();
@@ -299,7 +342,7 @@ form.onsubmit = async (e) => {
 	}
 };
 
-async function convertToWebPBuffer(file, quality, targetWidth, useBg, bgColor) {
+async function convertToWebPBuffer(file, quality, targetWidth, useBg, bgColor, useCrop, cropWidth, cropHeight) {
 	return new Promise((resolve, reject) => {
 		const img = new Image();
 		img.onload = () => {
@@ -313,16 +356,32 @@ async function convertToWebPBuffer(file, quality, targetWidth, useBg, bgColor) {
 				h = Math.round(img.height * scale);
 			}
 
-			canvas.width = w;
-			canvas.height = h;
+			let finalWidth = w;
+			let finalHeight = h;
+
+			if (useCrop) {
+				finalWidth = cropWidth;
+				finalHeight = cropHeight;
+			}
+
+			canvas.width = finalWidth;
+			canvas.height = finalHeight;
 			const ctx = canvas.getContext('2d');
 			
 			if (useBg) {
 				ctx.fillStyle = bgColor;
-				ctx.fillRect(0, 0, w, h);
+				ctx.fillRect(0, 0, finalWidth, finalHeight);
 			}
 			
-			ctx.drawImage(img, 0, 0, w, h);
+			let dx = 0;
+			let dy = 0;
+
+			if (useCrop) {
+				dx = (finalWidth - w) / 2;
+				dy = (finalHeight - h) / 2;
+			}
+
+			ctx.drawImage(img, dx, dy, w, h);
 
 			canvas.toBlob((blob) => {
 				if (!blob || blob.type !== 'image/webp') {
@@ -353,6 +412,10 @@ form.onreset = () => {
 	disposeInput.checked = false;
 	useBgInput.checked = false;
 	bgColorInput.value = "#ffffff";
+	useCropInput.checked = false;
+	cropFields.style.display = "none";
+	cropWidthInput.value = "100";
+	cropHeightInput.value = "100";
 	originalWidth = 0;
 	if (currentBlobUrl) URL.revokeObjectURL(currentBlobUrl);
 };
