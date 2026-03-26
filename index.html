@@ -103,11 +103,6 @@
 	</div>
 
 	<div class="field">
-		<label for="filename">Filename:</label>
-		<input type="text" id="filename" value="animation" placeholder="e.g. my-animation">
-	</div>
-
-	<div class="field">
 		<label for="quality">Quality (1-100): <span id="qVal">80</span></label>
 		<input type="range" id="quality" min="1" max="100" value="80" step="1">
 	</div>
@@ -157,6 +152,10 @@
 
 <div id="output-area">
 	<div id="status"></div>
+	<div class="field" style="width: 100%;">
+		<label for="filename">Filename:</label>
+		<input type="text" id="filename" value="animation" placeholder="e.g. my-animation" style="width: 100%; box-sizing: border-box;">
+	</div>
 	<a id="downloadBtn">Download WebP</a>
 	<div id="output-stats"></div>
 	<div id="output"></div>
@@ -187,6 +186,7 @@ const cropFields = document.getElementById('crop-fields');
 const cropWidthInput = document.getElementById('cropWidth');
 const cropHeightInput = document.getElementById('cropHeight');
 const imageInput = document.getElementById('images');
+const filenameInput = document.getElementById('filename');
 
 let currentBlobUrl = null;
 let originalWidth = 0;
@@ -266,10 +266,17 @@ cropWidthInput.oninput = () => {
 	cropHeightInput.value = Math.round(cropWidthInput.value * originalAspectRatio);
 };
 
+const updateFilename = () => {
+	const filename = filenameInput.value || 'animation';
+	downloadBtn.download = `${filename}.webp`;
+}
+filenameInput.oninput = updateFilename;
+
 form.onsubmit = async (e) => {
 	e.preventDefault();
 	const area = document.getElementById('output-area');
 	area.style.display = "flex";
+	area.scrollIntoView({ behavior: 'smooth', block: 'end' });
 	status.textContent = "Generating...";
 	output.innerHTML = "";
 	outputStats.textContent = "";
@@ -288,7 +295,6 @@ form.onsubmit = async (e) => {
 	const useCrop = useCropInput.checked;
 	const cropWidth = parseInt(cropWidthInput.value);
 	const cropHeight = parseInt(cropHeightInput.value);
-	const filename = document.getElementById('filename').value || 'animation';
 	const delay = Math.round(1000 / fps);
 
 	try {
@@ -332,7 +338,7 @@ form.onsubmit = async (e) => {
 		output.appendChild(img);
 
 		downloadBtn.href = currentBlobUrl;
-		downloadBtn.download = `${filename}.webp`;
+		updateFilename();
 		downloadBtn.style.display = "block";
 
 		status.textContent = "Finished!";
